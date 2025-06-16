@@ -143,7 +143,7 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
     }
     debounceTimer.current = setTimeout(() => {
       searchLocations(q);
-    }, 300);
+    }, 600);
   };
 
   const selectSuggestion = (suggestion: any) => {
