@@ -27,7 +27,7 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // Debounce timer ref
-  const debounceTimer = useRef<number | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -107,6 +107,9 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
     }
 
     return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
       map.current?.remove();
     };
   }, [mapboxToken]);
@@ -138,7 +141,7 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
-    debounceTimer.current = window.setTimeout(() => {
+    debounceTimer.current = setTimeout(() => {
       searchLocations(q);
     }, 300);
   };
