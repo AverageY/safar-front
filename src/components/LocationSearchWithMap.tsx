@@ -13,6 +13,9 @@ interface LocationSearchWithMapProps {
   selectedLocation: { address: string; lat: number; lng: number } | null;
 }
 
+// Move debounce outside component to avoid re-creation
+let searchTimeout: NodeJS.Timeout | null = null;
+
 export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
   title,
   placeholder,
@@ -25,9 +28,6 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
-  // Debounce timer ref
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -107,14 +107,18 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
     }
 
     return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
+      // Clean up global timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        searchTimeout = null;
       }
       map.current?.remove();
     };
   }, [mapboxToken]);
 
   const searchLocations = async (query: string) => {
+    console.log('🔍 API CALL MADE FOR:', query, 'at', new Date().toLocaleTimeString());
+    
     if (query.length < 3 || !mapboxToken) {
       setSuggestions([]);
       return;
@@ -133,15 +137,23 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
     }
   };
 
-  // Debounced input change handler
+  // Debounced input change handler using global timeout
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value;
     setSearchQuery(q);
     
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
+    console.log('⌨️ TYPED:', q, 'at', new Date().toLocaleTimeString());
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      console.log('❌ CLEARING PREVIOUS TIMEOUT');
+      clearTimeout(searchTimeout);
     }
-    debounceTimer.current = setTimeout(() => {
+    
+    // Set new timeout
+    console.log('⏰ SETTING 3 SECOND TIMER');
+    searchTimeout = setTimeout(() => {
+      console.log('🚀 TIMER FIRED - SEARCHING NOW');
       searchLocations(q);
     }, 3000);
   };
@@ -216,7 +228,7 @@ export const LocationSearchWithMap: React.FC<LocationSearchWithMapProps> = ({
 
           <div className="text-sm text-gray-600">
             {mapboxToken 
-              ? "Search for a location above or click on the map to select your " + title.toLowerCase() + "."
+              ? "Search for a location above or click on the map to select your " + title.toLowerCase() + ". (3 second delay active)"
               : "Map functionality requires configuration."
             }
           </div>
